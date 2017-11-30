@@ -18,6 +18,10 @@ int Erro(int A){
     printf ("Arquivo de saida nao pode ser aberto\n");
     return 1;
   }
+  if (A == 4){
+    printf ("Arquivo sem assinatura de bitmap\n");
+    return 1;
+  }
   if (A == 3){
     printf ("\n");
     return 1;

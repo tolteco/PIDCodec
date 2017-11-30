@@ -11,7 +11,7 @@ typedef struct pikcel{
     unsigned char R;
     unsigned char G;
     unsigned char B;
-};
+}pikcel;
 
 FILE *IN; //Arquivo de entrada
 FILE *OUT; //Arquivo de saida
@@ -47,5 +47,10 @@ int main(int argc, char *argv[]){
   }
 
   //Leitura do cabecalho
-  fread(L, 1, 4, IN);
+  fread(&L, sizeof(L), 1, IN);
+  if ((L & 65535) != 19778){ //BM nao encontrado
+    return Erro(4);
+  }
+  fread(&L, sizeof(L), 12, IN); //Resto do cabecalho
+
 }
