@@ -53,34 +53,21 @@ int main(int argc, char *argv[]){
   if ((L & 65535) != 19778){ //BM nao encontrado
     return Erro(4);
   }
-  fseek(IN, 2, SEEK_SET);
+  fseek(IN, 10, SEEK_SET);
   fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  X = L >> 16;
-  fread(&L, sizeof(L), 1, IN);
-  X += L << 16;
-  if (X != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
+  if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
     return Erro(5);
   }
 
   //Tamanho (largura e altura) da imagem
-  fread(&L, sizeof(L), 1, IN);
-  Larg = L >> 16;
-  fread(&L, sizeof(L), 1, IN);
-  Larg += L << 16;
-  Altu = L >> 16;
-  fread(&L, sizeof(L), 1, IN);
-  Altu += L << 16;
-  printf("Altura = %i. Largura = %i", Altu, Larg);
+  fseek(IN, 18, SEEK_SET);
+  fread(&Larg, 4, 1, IN);
+  fread(&Altu, 4, 1, IN);
+  aloca(Larg, Altu);
 
   //Leitura do resto do cabecalho (nao importa)
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-  fread(&L, sizeof(L), 1, IN);
-
+  fseek(IN, 28, SEEK_CUR);
+  fread(&N[0][0], sizeof(pikcel), 1, IN);
+  printf("R = %hu. G = %hu. B = %hu.\n", N[0][0].R, N[0][0].G, N[0][0].B);
   return 0;
 }
