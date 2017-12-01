@@ -8,9 +8,9 @@
 */
 
 typedef struct pikcel{
-    unsigned char R;
-    unsigned char G;
     unsigned char B;
+    unsigned char G;
+    unsigned char R;
 }pikcel;
 
 FILE *IN; //Arquivo de entrada
