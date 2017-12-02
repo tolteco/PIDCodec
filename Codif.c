@@ -20,22 +20,27 @@ int L; //4 bytes sendo lidos
 int X; //Auxiliar de L
 int Larg, Altu; //Largura e altura padrao
 pikcel **N; //Matriz da imagem atual (sendo processada)
-pikcel **A; //Matriz da imagem anterior (Ja processada)
+pikcel **A; //Matriz da imagem anterior (Ja processada) NAO FUNCIONA
+pikcel **T; //Matriz da imagem anterior (Ja processada)
+unsigned char *P; //Vetor para rapida leitura
 
 //Aloca Matrizes
 pikcel aloca(int l, int c){
   int i;
   A=(pikcel **) calloc(l, sizeof(pikcel));
   N=(pikcel **) calloc(l, sizeof(pikcel));
+  T=(pikcel **) calloc(l, sizeof(pikcel));
   for(i=0;i<l;i++){
     A[i]=(pikcel *) calloc(c, sizeof(pikcel));
     N[i]=(pikcel *) calloc(c, sizeof(pikcel));
+    T[i]=(pikcel *) calloc(c, sizeof(pikcel));
   }
 }
 
 /////////////////////////////////////////////////////////// MAIN
 
 int main(int argc, char *argv[]){
+  int i, j, k, h;
   if (argc < 3){ //Esperado pelo o menos o programa e uma imagem
     return Erro(1);
   }
@@ -64,10 +69,50 @@ int main(int argc, char *argv[]){
   fread(&Larg, 4, 1, IN);
   fread(&Altu, 4, 1, IN);
   aloca(Larg, Altu);
+  P = calloc(Larg * Altu * 3, 1);
 
   //Leitura do resto do cabecalho (nao importa)
   fseek(IN, 28, SEEK_CUR);
-  fread(&N[0][0], sizeof(pikcel), 1, IN);
-  printf("R = %hu. G = %hu. B = %hu.\n", N[0][0].R, N[0][0].G, N[0][0].B);
+  h = 0;
+  fread(&P, Larg * Altu * 3, 1, IN);
+  for (i = 0; i < Larg; i++) {
+    for (j = 0; j < Altu; j++) {
+      N[i][j].B = P[h];
+      N[i][j].G = P[h+1];
+      N[i][j].R = P[h+2];
+      T[i][j].B = P[h];
+      T[i][j].G = P[h+1];
+      T[i][j].R = P[h+2];
+      h += 3;
+    }
+  }
+
+  fclose(IN);
+  for (k = 3; k < argc; k++){
+    IN = fopen(argv[k],"rb"); //Leitura Binaria
+    printf("Leitura de %s\n", argv[k]);
+    if (IN == NULL){
+      return Erro(2);
+    }
+    fseek(IN, 10, SEEK_SET);
+    fread(&L, sizeof(L), 1, IN);
+    if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
+      return Erro(5);
+    }
+    fseek(IN, 54, SEEK_SET);
+    h = 0;
+    fread(&P, Larg * Altu * 3, 1, IN);
+    for (i = 0; i < Larg; i++) {
+      for (j = 0; j < Altu; j++) {
+        N[i][j].B = P[h];
+        N[i][j].G = P[h+1];
+        N[i][j].R = P[h+2];
+        h += 3;
+      }
+    }
+
+    //Algoritmo de compressao
+  }
+
   return 0;
 }
