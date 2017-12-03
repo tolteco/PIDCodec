@@ -72,14 +72,15 @@ int main(int argc, char *argv[]){
     return 6;
   }
   aloca(Larg, Altu);
-  P = calloc(Larg * Altu * 3, 1);
-  L = (VER << 28) + (Larg << 12) + (Altu); //Escrita do cabecalho do video
-  fwrite(L, 4, 1, OUT);
+  P = (unsigned char*) calloc(1000000, 1);
+  L = (Larg << 20) + (Altu << 8) + VER; //Escrita do cabecalho do video
+  fwrite(&L, 1, 4, OUT);
 
   //Leitura do resto do cabecalho (nao importa)
   fseek(IN, 28, SEEK_CUR);
   h = 0;
   fread(&P, Larg * Altu * 3, 1, IN);
+  printf("Larg = %i, Altu = %i, P = %i\n", Larg, Altu, sizeof(P)/sizeof(P[0]));
   for (i = 0; i < Larg; i++) {
     for (j = 0; j < Altu; j++) {
       N[i][j].B = P[h];
@@ -91,6 +92,7 @@ int main(int argc, char *argv[]){
       h += 3;
     }
   }
+  fwrite(&P, 1, sizeof(P), OUT);
 
   fclose(IN);
   for (k = 3; k < argc; k++){
@@ -112,6 +114,7 @@ int main(int argc, char *argv[]){
         N[i][j].B = P[h];
         N[i][j].G = P[h+1];
         N[i][j].R = P[h+2];
+        //fwrite(&N[i][j], sizeof(pikcel), 1, OUT);
         h += 3;
       }
     }
