@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include "Erros.h"
+#define VER 0
 
 /*
 * Algoritmo de codificacao de imagens bitmap em arquivo de video formato tvf
@@ -42,34 +42,39 @@ pikcel aloca(int l, int c){
 int main(int argc, char *argv[]){
   int i, j, k, h;
   if (argc < 3){ //Esperado pelo o menos o programa e uma imagem
-    return Erro(1);
+    return 1;
   }
   IN = fopen(argv[2],"rb"); //Leitura Binaria
   if (IN == NULL){
-    return Erro(2);
+    return 2;
   }
   OUT = fopen(argv[1],"wb"); //Arquivo de saida
   if (OUT == NULL){
-    return Erro(3);
+    return 3;
   }
 
   //Leitura do cabecalho
   fread(&L, sizeof(L), 1, IN);
   if ((L & 65535) != 19778){ //BM nao encontrado
-    return Erro(4);
+    return 4;
   }
   fseek(IN, 10, SEEK_SET);
   fread(&L, sizeof(L), 1, IN);
   if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
-    return Erro(5);
+    return 5;
   }
 
   //Tamanho (largura e altura) da imagem
   fseek(IN, 18, SEEK_SET);
   fread(&Larg, 4, 1, IN);
   fread(&Altu, 4, 1, IN);
+  if ((Larg & 4095) != Larg || (Altu & 4095) != Altu){
+    return 6;
+  }
   aloca(Larg, Altu);
   P = calloc(Larg * Altu * 3, 1);
+  L = (VER << 28) + (Larg << 12) + (Altu); //Escrita do cabecalho do video
+  fwrite(L, 4, 1, OUT);
 
   //Leitura do resto do cabecalho (nao importa)
   fseek(IN, 28, SEEK_CUR);
@@ -92,12 +97,12 @@ int main(int argc, char *argv[]){
     IN = fopen(argv[k],"rb"); //Leitura Binaria
     printf("Leitura de %s\n", argv[k]);
     if (IN == NULL){
-      return Erro(2);
+      return 2;
     }
     fseek(IN, 10, SEEK_SET);
     fread(&L, sizeof(L), 1, IN);
     if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
-      return Erro(5);
+      return 5;
     }
     fseek(IN, 54, SEEK_SET);
     h = 0;
@@ -112,7 +117,6 @@ int main(int argc, char *argv[]){
     }
 
     //Algoritmo de compressao
-  }
-
+  } //Fim para cada arquivo
   return 0;
 }

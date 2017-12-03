@@ -1,0 +1,8 @@
+-1  Erro nao catalogado
+1   Quantidade de parametros invalida
+2   Arquivo de entrada nao encontrado
+3   Arquivo de saida nao pode ser aberto
+4   Arquivo sem assinatura de bitmap
+5   Imagem com paleta
+6   Imagem com dimensoes maiores que 4095 nao sao suportadas por esta versao
+7
