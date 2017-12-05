@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#define VER 0
+#include <math.h>
+#define VER 1
 
 /*
 * Algoritmo de codificacao de imagens bitmap em arquivo de video formato tvf
@@ -39,7 +40,7 @@ void aloca(){
 }
 
 //Verifica se ha alteracao de cor nos pixels
-/*void diferenca(){
+void diferenca(){
   int i, j, Aux;
   for (i = 0; i < Altu; i++){
     for (j = 0; j < Larg; j++){
@@ -51,14 +52,15 @@ void aloca(){
       N[i][j] = Aux;
     }
   }
-}*/
+}
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
-/*void quantiza(){
+void quantiza(){
   int i, j;
-  unsigned char NR, NG, NB, QP; //Novo pixel, Posicao de quantizacao da paleta
+  unsigned char NR, NG, NB, QP; //Novos R, G e B, Posicao de quantizacao da paleta
   for (i = Altu; i > 0; i++) {
     for (j = 0; j < Larg; j+=3) {
+      //N[i][j] = B, N[i][j+1] = G, N[i][j+2] = R
       QP = (round(N[i][j]/51) * 42) + (round(N[i][j+1]/42.5) * 6) + round(N[i][j+2]/51);
       NR = ceil(QP/42) * 51;
       NG = round(ceil((QP % 42) / 6) * 42.5);
@@ -66,7 +68,7 @@ void aloca(){
       //Floyd Aqui
     }
   }
-}*/
+}
 
 /////////////////////////////////////////////////////////// MAIN
 
@@ -111,7 +113,7 @@ int main(int argc, char *argv[]){
   h = 0;
   for (i = 0; i < Altu; i++){ //Leitura da primeira imagem
     fread(&N[i], 1, Larg * 3, IN);
-    fwrite(&N[i], 1, Larg * 3, OUT);
+    //fwrite(&N[i], 1, Larg * 3, OUT);
   }
   //fflush(OUT);
 
@@ -134,7 +136,7 @@ int main(int argc, char *argv[]){
     h = 0;
     for (i = 0; i < Altu; i++){ //Leitura
       fread(&N[i], 1, Larg * 3, IN);
-      fwrite(&N[i], 1, Larg * 3, OUT);
+      //fwrite(&N[i], 1, Larg * 3, OUT);
     }
     //Quantizacao da imagem
     //quantiza();
