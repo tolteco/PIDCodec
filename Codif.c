@@ -29,7 +29,7 @@ void aloca(){
   int i;
   N=(unsigned char **) calloc(Altu, sizeof(unsigned char));
   T=(unsigned char **) calloc(Altu, sizeof(unsigned char));
-  for(i=0;i<l;i++){
+  for(i=0;i<Altu;i++){
     N[i]=(unsigned char *) calloc(Larg * 3, sizeof(unsigned char));
     T[i]=(unsigned char *) calloc(Larg, sizeof(unsigned char));
   }
@@ -39,7 +39,7 @@ void aloca(){
 }
 
 //Verifica se ha alteracao de cor nos pixels
-void diferenca(){
+/*void diferenca(){
   int i, j, Aux;
   for (i = 0; i < Altu; i++){
     for (j = 0; j < Larg; j++){
@@ -51,10 +51,10 @@ void diferenca(){
       N[i][j] = Aux;
     }
   }
-}
+}*/
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
-void quantiza(){
+/*void quantiza(){
   int i, j;
   unsigned char NR, NG, NB, QP; //Novo pixel, Posicao de quantizacao da paleta
   for (i = Altu; i > 0; i++) {
@@ -66,7 +66,7 @@ void quantiza(){
       //Floyd Aqui
     }
   }
-}
+}*/
 
 /////////////////////////////////////////////////////////// MAIN
 
