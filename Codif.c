@@ -21,12 +21,12 @@ int L; //4 bytes sendo lidos
 int X; //Auxiliar de L
 int Larg, Altu; //Largura e altura padrao
 //Matrizes: Matriz[Largura][Altura]
-unsigned char **N; //Matriz da imagem atual (sendo processada)
-unsigned char **T; //Matriz da imagem anterior (Ja processada)
+unsigned char N[1080][5760]; //Matriz da imagem atual (sendo processada)
+unsigned char T[1080][1920]; //Matriz da imagem anterior (Ja processada)
 //unsigned char *P; //Vetor para rapida leitura
 
 //Aloca Matrizes
-void aloca(){
+/*void aloca(){
   int i;
   N=(unsigned char **) calloc(Altu, sizeof(unsigned char));
   T=(unsigned char **) calloc(Altu, sizeof(unsigned char));
@@ -37,7 +37,7 @@ void aloca(){
   if (T == NULL || N == NULL){
     exit(-1);
   }
-}
+}*/
 
 //Verifica se ha alteracao de cor nos pixels
 void diferenca(){
@@ -56,17 +56,65 @@ void diferenca(){
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
 void quantiza(){
-  int i, j;
+  int i, j, h;
   unsigned char NR, NG, NB, QP; //Novos R, G e B, Posicao de quantizacao da paleta
-  for (i = Altu; i > 0; i++) {
-    for (j = 0; j < Larg; j+=3) {
+  char ER, EG, EB; //Erros de quantizacao
+  for (i = Altu-1; i > 0; i--) {
+    for (j = 0; j < (Larg * 3) - 3; j+=3) {
       //N[i][j] = B, N[i][j+1] = G, N[i][j+2] = R
-      QP = (round(N[i][j]/51) * 42) + (round(N[i][j+1]/42.5) * 6) + round(N[i][j+2]/51);
-      NR = ceil(QP/42) * 51;
-      NG = round(ceil((QP % 42) / 6) * 42.5);
-      NB = (QP % 42) % 6;
-      //Floyd Aqui
+      QP = (round(N[i][j]/51.0f) * 42) + (round(N[i][j+1]/42.5f) * 6) + round(N[i][j+2]/51.0f);
+      NB = floor(QP/42.0f) * 51;
+      NG = round(floor((QP % 42) / 6.0f) * 42.5f);
+      NR = ((QP % 42) % 6) * 51;
+      //Floyd Steinberg
+      ER = N[i][j+2] - NR; //Erro
+      EG = N[i][j+1] - NG;
+      EB = N[i][j  ] - NB;
+      N[i  ][j+3] += round(EB * 0.4375); //L
+      N[i  ][j+4] += round(EG * 0.4375);
+      N[i  ][j+5] += round(ER * 0.4375);
+      N[i-1][j-3] += round(EB * 0.1875); //SO
+      N[i-1][j-2] += round(EG * 0.1875);
+      N[i-1][j-1] += round(ER * 0.1875);
+      N[i-1][j  ] += round(EB * 0.3125); //S
+      N[i-1][j+1] += round(EG * 0.3125);
+      N[i-1][j+2] += round(ER * 0.3125);
+      N[i-1][j+3] += round(EB * 0.0625); //SE
+      N[i-1][j+4] += round(EG * 0.0625);
+      N[i-1][j+5] += round(ER * 0.0625);
+      N[i][j%3] = QP;
     }
+    //Ultima coluna
+    QP = (round(N[i][j]/51.0f) * 42) + (round(N[i][j+1]/42.5f) * 6) + round(N[i][j+2]/51.0f);
+    NB = floor(QP/42.0f) * 51;
+    NG = round(floor((QP % 42) / 6.0f) * 42.5f);
+    NR = ((QP % 42) % 6) * 51;
+    ER = N[i][j+2] - NR; //Erro
+    EG = N[i][j+1] - NG;
+    EB = N[i][j  ] - NB;
+    N[i-1][j-3] += round(EB * 0.1875); //SO
+    N[i-1][j-2] += round(EG * 0.1875);
+    N[i-1][j-1] += round(ER * 0.1875);
+    N[i-1][j  ] += round(EB * 0.3125); //S
+    N[i-1][j+1] += round(EG * 0.3125);
+    N[i-1][j+2] += round(ER * 0.3125);
+    N[i-1][j+3] += round(EB * 0.0625); //SE
+    N[i-1][j+4] += round(EG * 0.0625);
+    N[i-1][j+5] += round(ER * 0.0625);
+    N[i][j%3] = QP;
+  }
+  for (j = 0; j < Larg - 3; j+=3) {
+    QP = (round(N[0][j]/51.0f) * 42) + (round(N[0][j+1]/42.5f) * 6) + round(N[0][j+2]/51.0f);
+    NB = floor(QP/42.0f) * 51;
+    NG = round(floor((QP % 42) / 6.0f) * 42.5f);
+    NR = ((QP % 42) % 6) * 51;
+    ER = N[0][j+2] - NR; //Erro
+    EG = N[0][j+1] - NG;
+    EB = N[0][j  ] - NB;
+    N[0][j+3] += round(EB * 0.4375); //L
+    N[0][j+4] += round(EG * 0.4375);
+    N[0][j+5] += round(ER * 0.4375);
+    N[0][j%3] = QP;
   }
 }
 
@@ -104,7 +152,7 @@ int main(int argc, char *argv[]){
   if ((Larg & 4095) != Larg || (Altu & 4095) != Altu){
     return 6;
   }
-  aloca();
+  //aloca();
   L = (Larg << 20) + (Altu << 8) + (VER << 4); //Escrita do cabecalho do video
   fwrite(&L, sizeof(int), 1, OUT);
 
@@ -118,12 +166,22 @@ int main(int argc, char *argv[]){
   //fflush(OUT);
 
   //Quantizacao da primeira imagem
+  quantiza();
+  /*for (i = 0; i < Altu; i++) {
+    for (j = 0; j < Larg; j+=3) {
+      T[i][j] = N[i][j];
+    }
+  }*/
+  for (i = 0; i < Altu; i++) {
+    fwrite(&N[i], 1, Larg, OUT);
+  }
+  fflush(OUT);
 
   fclose(IN);
 
   for (k = 3; k < argc; k++){
     IN = fopen(argv[k],"rb"); //Leitura Binaria
-    //printf("Leitura de %s\n", argv[k]);
+    printf("Leitura de %s\n", argv[k]);
     if (IN == NULL){
       return 2;
     }
@@ -139,8 +197,8 @@ int main(int argc, char *argv[]){
       //fwrite(&N[i], 1, Larg * 3, OUT);
     }
     //Quantizacao da imagem
-    //quantiza();
-
+    quantiza();
+    //escreveT();
   } //Fim para cada arquivo
   fclose(OUT);
   return 0;
