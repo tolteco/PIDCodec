@@ -25,13 +25,8 @@ opções   :
   Sem opções até o momento
 ```
 
-### Estruturas de programação
+### Versões
 
-Estrutura de cada pixel (alocação realizada ao início, com a largura e altura da primeira imagem)
-```
-typedef struct pikcel{
-    unsigned char B;
-    unsigned char G;
-    unsigned char R;
-}pikcel;
-```
+| Numero | Compressão | Descrição |
+| ------ | ---------- | --------- |
+| 0      | 1:1        | Bitmaps escritos em sequência |

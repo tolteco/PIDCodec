@@ -7,11 +7,11 @@
 * Algoritmo de codificacao de imagens bitmap em arquivo de video formato tvf
 */
 
-typedef struct pikcel{
+/*typedef struct pikcel{
     unsigned char B;
     unsigned char G;
     unsigned char R;
-}pikcel;
+}pikcel;*/
 
 FILE *IN; //Arquivo de entrada
 FILE *OUT; //Arquivo de saida
@@ -19,21 +19,52 @@ FILE *OUT; //Arquivo de saida
 int L; //4 bytes sendo lidos
 int X; //Auxiliar de L
 int Larg, Altu; //Largura e altura padrao
-pikcel **N; //Matriz da imagem atual (sendo processada)
-pikcel **A; //Matriz da imagem anterior (Ja processada) NAO FUNCIONA
-pikcel **T; //Matriz da imagem anterior (Ja processada)
-unsigned char *P; //Vetor para rapida leitura
+//Matrizes: Matriz[Largura][Altura]
+unsigned char **N; //Matriz da imagem atual (sendo processada)
+unsigned char **T; //Matriz da imagem anterior (Ja processada)
+//unsigned char *P; //Vetor para rapida leitura
 
 //Aloca Matrizes
-pikcel aloca(int l, int c){
+void aloca(){
   int i;
-  A=(pikcel **) calloc(l, sizeof(pikcel));
-  N=(pikcel **) calloc(l, sizeof(pikcel));
-  T=(pikcel **) calloc(l, sizeof(pikcel));
+  N=(unsigned char **) calloc(Altu, sizeof(unsigned char));
+  T=(unsigned char **) calloc(Altu, sizeof(unsigned char));
   for(i=0;i<l;i++){
-    A[i]=(pikcel *) calloc(c, sizeof(pikcel));
-    N[i]=(pikcel *) calloc(c, sizeof(pikcel));
-    T[i]=(pikcel *) calloc(c, sizeof(pikcel));
+    N[i]=(unsigned char *) calloc(Larg * 3, sizeof(unsigned char));
+    T[i]=(unsigned char *) calloc(Larg, sizeof(unsigned char));
+  }
+  if (T == NULL || N == NULL){
+    exit(-1);
+  }
+}
+
+//Verifica se ha alteracao de cor nos pixels
+void diferenca(){
+  int i, j, Aux;
+  for (i = 0; i < Altu; i++){
+    for (j = 0; j < Larg; j++){
+      Aux = T[i][j] - N[i][j];
+      if(N[i][j] != T[i][j]){
+        T[i][j] = N[i][j];
+        N[i][j] = Aux;
+      }
+      N[i][j] = Aux;
+    }
+  }
+}
+
+//Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
+void quantiza(){
+  int i, j;
+  unsigned char NR, NG, NB, QP; //Novo pixel, Posicao de quantizacao da paleta
+  for (i = Altu; i > 0; i++) {
+    for (j = 0; j < Larg; j+=3) {
+      QP = (round(N[i][j]/51) * 42) + (round(N[i][j+1]/42.5) * 6) + round(N[i][j+2]/51);
+      NR = ceil(QP/42) * 51;
+      NG = round(ceil((QP % 42) / 6) * 42.5);
+      NB = (QP % 42) % 6;
+      //Floyd Aqui
+    }
   }
 }
 
@@ -41,7 +72,7 @@ pikcel aloca(int l, int c){
 
 int main(int argc, char *argv[]){
   int i, j, k, h;
-  if (argc < 3){ //Esperado pelo o menos o programa e uma imagem
+  if (argc < 3){ //Esperado pelo o menos o programa, arquivo de saida e uma imagem
     return 1;
   }
   IN = fopen(argv[2],"rb"); //Leitura Binaria
@@ -60,7 +91,7 @@ int main(int argc, char *argv[]){
   }
   fseek(IN, 10, SEEK_SET);
   fread(&L, sizeof(L), 1, IN);
-  if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
+  if (L != 54){ //Offset bits tem que ser igual a para imagem true color (nao trabalhamos com paletas)
     return 5;
   }
 
@@ -71,33 +102,26 @@ int main(int argc, char *argv[]){
   if ((Larg & 4095) != Larg || (Altu & 4095) != Altu){
     return 6;
   }
-  aloca(Larg, Altu);
-  P = (unsigned char*) calloc(1000000, 1);
-  L = (Larg << 20) + (Altu << 8) + VER; //Escrita do cabecalho do video
-  fwrite(&L, 1, 4, OUT);
+  aloca();
+  L = (Larg << 20) + (Altu << 8) + (VER << 4); //Escrita do cabecalho do video
+  fwrite(&L, sizeof(int), 1, OUT);
 
   //Leitura do resto do cabecalho (nao importa)
   fseek(IN, 28, SEEK_CUR);
   h = 0;
-  fread(&P, Larg * Altu * 3, 1, IN);
-  printf("Larg = %i, Altu = %i, P = %i\n", Larg, Altu, sizeof(P)/sizeof(P[0]));
-  for (i = 0; i < Larg; i++) {
-    for (j = 0; j < Altu; j++) {
-      N[i][j].B = P[h];
-      N[i][j].G = P[h+1];
-      N[i][j].R = P[h+2];
-      T[i][j].B = P[h];
-      T[i][j].G = P[h+1];
-      T[i][j].R = P[h+2];
-      h += 3;
-    }
+  for (i = 0; i < Altu; i++){ //Leitura da primeira imagem
+    fread(&N[i], 1, Larg * 3, IN);
+    fwrite(&N[i], 1, Larg * 3, OUT);
   }
-  fwrite(&P, 1, sizeof(P), OUT);
+  //fflush(OUT);
+
+  //Quantizacao da primeira imagem
 
   fclose(IN);
+
   for (k = 3; k < argc; k++){
     IN = fopen(argv[k],"rb"); //Leitura Binaria
-    printf("Leitura de %s\n", argv[k]);
+    //printf("Leitura de %s\n", argv[k]);
     if (IN == NULL){
       return 2;
     }
@@ -106,20 +130,16 @@ int main(int argc, char *argv[]){
     if (L != 54){ //Offset bits tem que ser igual a  para imagem true color (nao trabalhamos com paletas)
       return 5;
     }
-    fseek(IN, 54, SEEK_SET);
+    fseek(IN, 54, SEEK_SET); //Pula Cabecalho
     h = 0;
-    fread(&P, Larg * Altu * 3, 1, IN);
-    for (i = 0; i < Larg; i++) {
-      for (j = 0; j < Altu; j++) {
-        N[i][j].B = P[h];
-        N[i][j].G = P[h+1];
-        N[i][j].R = P[h+2];
-        //fwrite(&N[i][j], sizeof(pikcel), 1, OUT);
-        h += 3;
-      }
+    for (i = 0; i < Altu; i++){ //Leitura
+      fread(&N[i], 1, Larg * 3, IN);
+      fwrite(&N[i], 1, Larg * 3, OUT);
     }
+    //Quantizacao da imagem
+    //quantiza();
 
-    //Algoritmo de compressao
   } //Fim para cada arquivo
+  fclose(OUT);
   return 0;
 }
