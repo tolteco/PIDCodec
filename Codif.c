@@ -14,91 +14,111 @@ FILE *OUT; //Arquivo de saida
 
 int L; //4 bytes sendo lidos
 int X; //Auxiliar de L
-int Larg, Altu; //Largura e altura padrao
+int Larg, Altu, LarN; //Largura e altura padrao
 //Matrizes: Matriz[Altura][Largura]
 unsigned char N[1080][5760]; //Matriz da imagem atual (sendo processada)
 unsigned char T[1080][1920]; //Matriz da imagem anterior (Ja processada)
 unsigned char P[255][3]; //Paleta de cores para acesso direto (sem calculos)
-
-//Verifica se ha alteracao de cor nos pixels
-void diferenca(){
-  int i, j, Aux;
-  for (i = 0; i < Altu; i++){
-    for (j = 0; j < Larg; j++){
-      Aux = T[i][j] - N[i][j];
-      if(N[i][j] != T[i][j]){
-        T[i][j] = N[i][j];
-        N[i][j] = Aux;
-      }
-      N[i][j] = Aux;
-    }
-  }
-}
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
 void quantiza(){
   int i, j, h;
   unsigned char NR, NG, NB, QP; //Novos R, G e B, Posicao de quantizacao da paleta
   char ER, EG, EB; //Erros de quantizacao
-  for (i = 1079; i > 0; i--) {
+  short B; //Calculo de sinal
+  LarN = (Larg*3)-3;
+  for (i = Altu-1; i > 0; i--) {
     //Primeira coluna
     QP = (round(N[i][0]/51.0f) * 42) + (round(N[i][1]/42.5f) * 6) + round(N[i][2]/51.0f);
     ER = N[i][2] - P[QP][0]; //Erro
     EG = N[i][1] - P[QP][1];
     EB = N[i][0] - P[QP][2];
-    N[i  ][3] += round(EB * 0.4375); //L
-    N[i  ][4] += round(EG * 0.4375);
-    N[i  ][5] += round(ER * 0.4375);
-    N[i-1][0] += round(EB * 0.3125); //S
-    N[i-1][1] += round(EG * 0.3125);
-    N[i-1][2] += round(ER * 0.3125);
-    N[i-1][3] += round(EB * 0.0625); //SE
-    N[i-1][4] += round(EG * 0.0625);
-    N[i-1][5] += round(ER * 0.0625);
+    B = N[i  ][3] + round(EB * 0.4375);
+    N[i  ][3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ; //L
+    B = N[i  ][4] + round(EG * 0.4375);
+    N[i  ][4] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
+    B = N[i  ][5] + round(ER * 0.4375);
+    N[i  ][5] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
+    B = N[i-1][0] + round(EB * 0.3125);
+    N[i-1][0] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ; //S
+    B = N[i-1][1] + round(EG * 0.3125);
+    N[i-1][1] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
+    B = N[i-1][2] + round(ER * 0.3125);
+    N[i-1][2] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
+    B = N[i-1][3] + round(EB * 0.0625);
+    N[i-1][3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ; //SE
+    B = N[i-1][4] + round(EG * 0.0625);
+    N[i-1][4] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
+    B = N[i-1][5] + round(ER * 0.0625);
+    N[i-1][5] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255 ;
     T[i][0] = QP;
-    for (j = 3; j < 5756; j+=3) {
+    for (j = 3; j < LarN; j+=3) {
       //N[i][j] = B, N[i][j+1] = G, N[i][j+2] = R
       QP = (round(N[i][j]/51.0f) * 42) + (round(N[i][j+1]/42.5f) * 6) + round(N[i][j+2]/51.0f);
-      ER = N[i][2] - P[QP][0]; //Erro
-      EG = N[i][1] - P[QP][1];
-      EB = N[i][0] - P[QP][2];
-      N[i  ][j+3] += round(EB * 0.4375); //L
-      N[i  ][j+4] += round(EG * 0.4375);
-      N[i  ][j+5] += round(ER * 0.4375);
-      N[i-1][j-3] += round(EB * 0.1875); //SO
-      N[i-1][j-2] += round(EG * 0.1875);
-      N[i-1][j-1] += round(ER * 0.1875);
-      N[i-1][j  ] += round(EB * 0.3125); //S
-      N[i-1][j+1] += round(EG * 0.3125);
-      N[i-1][j+2] += round(ER * 0.3125);
-      N[i-1][j+3] += round(EB * 0.0625); //SE
-      N[i-1][j+4] += round(EG * 0.0625);
-      N[i-1][j+5] += round(ER * 0.0625);
+      ER = N[i][j+2] - P[QP][0]; //Erro
+      EG = N[i][j+1] - P[QP][1];
+      EB = N[i][j  ] - P[QP][2];
+      B = N[i  ][j+3] + round(EB * 0.4375);
+      N[i  ][j+3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //L
+      B = N[i  ][j+4] + round(EG * 0.4375);
+      N[i  ][j+4] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i  ][j+5] + round(ER * 0.4375);
+      N[i  ][j+5] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j-3] + round(EB * 0.1875);
+      N[i-1][j-3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //SO
+      B = N[i-1][j-2] + round(EG * 0.1875);
+      N[i-1][j-2] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j-1] + round(ER * 0.1875);
+      N[i-1][j-1] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j  ] + round(EB * 0.3125);
+      N[i-1][j  ] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //S
+      B = N[i-1][j+1] + round(EG * 0.3125);
+      N[i-1][j+1] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j+2] + round(ER * 0.3125);
+      N[i-1][j+2] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j+3] + round(EB * 0.0625);
+      N[i-1][j+3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //SE
+      B = N[i-1][j+4] + round(EG * 0.0625);
+      N[i-1][j+4] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+      B = N[i-1][j+5] + round(ER * 0.0625);
+      N[i-1][j+5] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
       T[i][j/3] = QP;
     }
     //Ultima coluna
+    j = LarN;
     QP = (round(N[i][j]/51.0f) * 42) + (round(N[i][j+1]/42.5f) * 6) + round(N[i][j+2]/51.0f);
-    ER = N[i][2] - P[QP][0]; //Erro
-    EG = N[i][1] - P[QP][1];
-    EB = N[i][0] - P[QP][2];
-    N[i-1][j-3] += round(EB * 0.1875); //SO
-    N[i-1][j-2] += round(EG * 0.1875);
-    N[i-1][j-1] += round(ER * 0.1875);
-    N[i-1][j  ] += round(EB * 0.3125); //S
-    N[i-1][j+1] += round(EG * 0.3125);
-    N[i-1][j+2] += round(ER * 0.3125);
-    T[i][j/3] = QP;
+    ER = N[i][LarN+2] - P[QP][0]; //Erro
+    EG = N[i][LarN+1] - P[QP][1];
+    EB = N[i][LarN  ] - P[QP][2];
+    B = N[i-1][j-3] + round(EB * 0.1875);
+    N[i-1][j-3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //SO
+    B = N[i-1][j-2] + round(EG * 0.1875);
+    N[i-1][j-2] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+    B = N[i-1][j-1] + round(ER * 0.1875);
+    N[i-1][j-1] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+    B = N[i-1][j  ] + round(EB * 0.3125);
+    N[i-1][j  ] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //S
+    B = N[i-1][j+1] + round(EG * 0.3125);
+    N[i-1][j+1] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+    B = N[i-1][j+2] + round(ER * 0.3125);
+    N[i-1][j+2] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+    T[i][Larg-1] = QP;
   }
-  for (j = 0; j < Larg - 3; j+=3) {
+  i = 0;
+  for (j = 0; j < LarN; j+=3) {
     QP = (round(N[0][j]/51.0f) * 42) + (round(N[0][j+1]/42.5f) * 6) + round(N[0][j+2]/51.0f);
-    ER = N[i][2] - P[QP][0]; //Erro
-    EG = N[i][1] - P[QP][1];
-    EB = N[i][0] - P[QP][2];
-    N[0][j+3] += round(EB * 0.4375); //L
-    N[0][j+4] += round(EG * 0.4375);
-    N[0][j+5] += round(ER * 0.4375);
+    ER = N[0][j+2] - P[QP][0]; //Erro
+    EG = N[0][j+1] - P[QP][1];
+    EB = N[0][j  ] - P[QP][2];
+    B = N[i  ][j+3] + round(EB * 0.4375);
+    N[i  ][j+3] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255; //L
+    B = N[i  ][j+4] + round(EG * 0.4375);
+    N[i  ][j+4] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
+    B = N[i  ][j+5] + round(ER * 0.4375);
+    N[i  ][j+5] = ((B & 255) == B) ? B : (B & 32768) ? 0 : 255;
     T[0][j/3] = QP;
   }
+  T[0][Larg-1] = (round(N[0][LarN]/51.0f) * 42) + (round(N[0][LarN+1]/42.5f) * 6) + round(N[0][LarN+2]/51.0f);
 }
 
 //Gera a paleta uniforme (Acesso acelerado)
@@ -156,8 +176,8 @@ int main(int argc, char *argv[]){
   fwrite(&L, sizeof(int), 1, OUT);
   gerapaleta();
 
-  //Leitura do resto do cabecalho (nao importa)
-  fseek(IN, 28, SEEK_CUR);
+  //Leitura do resto do cabecalho nao importa
+  fseek(IN, 54, SEEK_SET);
   h = 0;
   for (i = 0; i < Altu; i++){ //Leitura da primeira imagem
     fread(&N[i], 1, Larg * 3, IN);
@@ -166,25 +186,17 @@ int main(int argc, char *argv[]){
   //fflush(OUT);
 
   //Quantizacao da primeira imagem
-  system("ECHO %TIME%");
   quantiza();
-  system("ECHO %TIME%");
   for (i = 0; i < Altu; i++) {
-    for (j = 0; j < Larg; j++) {
-      //T[i][j] = N[i][j];
-      fwrite(&T[i][j], 1, 1, OUT);
-    }
+    //T[i][j] = N[i][j];
+    fwrite(&T[i], 1, Larg, OUT);
   }
-  /*for (i = 0; i < 30; i=i+3) {
-    printf("%hu\t%hu\t%hu\n", N[0][i], N[0][i+1], N[0][i+2]);
-    //fwrite(&N[i], 1, Larg * 3, OUT);
-  }*/
   fflush(OUT);
   fclose(IN);
 
   for (k = 3; k < argc; k++){
     IN = fopen(argv[k],"rb"); //Leitura Binaria
-    printf("Leitura de %s\n", argv[k]);
+    //printf("Leitura de %s\n", argv[k]);
     if (IN == NULL){
       return 2;
     }
@@ -200,8 +212,13 @@ int main(int argc, char *argv[]){
       //fwrite(&N[i], 1, Larg * 3, OUT);
     }
     //Quantizacao da imagem
-    //quantiza();
-    //escreveT();
+    quantiza();
+    for (i = 0; i < Altu; i++) {
+      //T[i][j] = N[i][j];
+      fwrite(&T[i], 1, Larg, OUT);
+    }
+    fflush(OUT);
+    fclose(IN);
   } //Fim para cada arquivo
   fclose(OUT);
   return 0;
