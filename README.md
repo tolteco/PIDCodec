@@ -29,3 +29,4 @@ saida    : Nome do arquivo de saida (extensão .tvf requerida)
 | ------ | ---------- | --------- |
 | [0](https://github.com/tolteco/PIDCodec/releases/tag/0)     | 1:1        | Bitmaps escritos em sequência |
 | [1](https://github.com/tolteco/PIDCodec/releases/tag/1)     | 3:1        | Bitmaps comprimidos de acordo com o algoritmo de Floyd-Steinberg |
+| [2](https://github.com/tolteco/PIDCodec/releases/tag/2)     | 3:1        | Implementação _Multi-Thread_, onde cada thread trabalha com um arquivo |
