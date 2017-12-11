@@ -1,4 +1,6 @@
+-2  Erro na soma da contagem de frequencias
 -1  Erro nao catalogado
+0   Sem erros
 1   Quantidade de parametros invalida
 2   Arquivo de entrada nao encontrado
 3   Arquivo de saida nao pode ser aberto

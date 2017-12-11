@@ -15,12 +15,14 @@ FILE *OUT; //Arquivo de saida
 int L; //4 bytes sendo lidos
 int X; //Auxiliar de L
 int Larg, Altu, LarN; //Largura e altura padrao
+int ES = 0; //Sinal de erro padrao (Alguem pode sinalizar um alerta por essa variavel)
 //Matrizes: Matriz[Altura][Largura]
 unsigned char N[1080][5760]; //Matriz da imagem atual (sendo processada)
 unsigned char T[1080][1920]; //Matriz da imagem anterior (Ja processada)
 unsigned char P[255][3]; //Paleta de cores para acesso direto (sem calculos)
-unsigned char O[1080][1920]; //Matriz com a imagem antiga (para diferenca)
-unsigned short V[2073600];
+unsigned int O[255];
+double Prob[255][2];
+unsigned int V[2073600];
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
 void quantiza(){
@@ -141,7 +143,7 @@ void gerapaleta(){
 }
 
 //Calcula a diferenca entra a imagem nova(T) e a anterior(O) e
-void diferenca(){
+/*void diferenca(){
   int i, j, Aux, h;
   h = 0;
   for (i = 0; i < Altu; i++){
@@ -167,6 +169,65 @@ void diferenca(){
     }
   }
   X = h;
+}*/
+
+void aritmetica(){
+  int i, j, S, Ant, h;
+  unsigned int LSup, LInf;
+  double S2 = 0;
+  S = 0;
+  for (i = 0; i < 255; i++) { //Zera os caras
+    O[i] = 0;
+  }
+  for (i = 0; i < Altu; i++){
+    for (j = 0; j < Larg; j++){ //Conta a frequencia do pessoal
+      O[T[i][j]] += 1;
+    }
+  }
+  //Int = 0 ate 4294967295
+  for (i = 0; i < 255; i++) { //Verifica se a soma somou todo mundo
+    S += O[i];
+  }
+  if (S != (Altu * Larg)) {
+    ES = -2;
+  }
+  for (i = 0; i < 255; i++) {
+    Prob[i][0] = (double) O[i] / S;
+  }
+  Prob[0][1] = Prob[0][0];
+  Prob[0][0] = 0.0;
+  for (i = 1; i < 255; i++) {
+    Prob[i][1] = Prob[i-1][1] + Prob[i][0];
+    Prob[i][0] = Prob[i-1][1];
+  }
+  /*for (i = 0; i < 255; i++) {
+    printf("..Prob[%i] = %lf\n", i, Prob[i][1]);
+    printf("**Prob[%i] = %lf\n", i, Prob[i][0]);
+    S2 += Prob[i][0];
+  }
+  printf("---%lf---\n", S2);*///Debug
+  LSup = 4294967295;
+  LInf = 0;
+  h = 0;
+  for (i = 0; i < Altu; i++){
+    for (j = 0; j < Larg; j++){ //Hora da magica
+      LInf += ((LSup - LInf) * Prob[T[i][j]][1]);
+      LSup += ((LSup - LInf) * Prob[T[i][j]][0]);
+      if (j % 5 == 0 && i != 0 && j != 0){ //6-1
+        V[h] = LInf;
+        h++;
+        LSup = 4294967295;
+        LInf = 0;
+      }
+    }
+  }
+  X = h;
+}
+
+void invaritmetica(){
+  int i, j, S, Ant, h;
+  unsigned int LSup, LInf;
+  double S2 = 0;
 }
 
 /////////////////////////////////////////////////////////// MAIN
@@ -212,19 +273,12 @@ int main(int argc, char *argv[]){
   h = 0;
   for (i = 0; i < Altu; i++){ //Leitura da primeira imagem
     fread(&N[i], 1, Larg * 3, IN);
-    //fwrite(&N[i], 1, Larg * 3, OUT);
   }
-  //fflush(OUT);
 
   //Quantizacao da primeira imagem
   quantiza();
-  for (i = 0; i < Altu; i++) { //Preenche a primeira imagem
-    for (j = 0; j < Larg; j++) {
-      O[i][j] = T[i][j];
-    }
-  }
+  aritmetica();
   for (i = 0; i < Altu; i++) {
-    //T[i][j] = N[i][j];
     fwrite(&T[i], 1, Larg, OUT);
   }
   fflush(OUT);
@@ -245,22 +299,18 @@ int main(int argc, char *argv[]){
     h = 0;
     for (i = 0; i < Altu; i++){ //Leitura
       fread(&N[i], 1, Larg * 3, IN);
-      //fwrite(&N[i], 1, Larg * 3, OUT);
     }
     //Quantizacao da imagem
     system("ECHO %TIME%");
     quantiza();
-    /*system("ECHO %TIME%");
-    diferenca();
-    system("ECHO %TIME%");
-    fwrite(&V[i], sizeof(unsigned short), X, OUT);*/
+    aritmetica();
+    invaritmetica();
     for (i = 0; i < Altu; i++) {
-      //T[i][j] = N[i][j];
       fwrite(&T[i], 1, Larg, OUT);
     }
     fflush(OUT);
     fclose(IN);
   } //Fim para cada arquivo
   fclose(OUT);
-  return 0;
+  return ES;
 }
