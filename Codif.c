@@ -5,7 +5,7 @@
 #include <conio.h>
 #include <pthread.h>
 #include <math.h>
-#define VER 2
+#define VER 3
 
 /*
 * Algoritmo de codificacao de imagens bitmap em arquivo de video formato tvf
@@ -22,10 +22,10 @@ int Sin; //Sinal entre as threads
 int QArg; //Quantidade de argumentos (Para ser global)
 int Fini = 1; //Finalizacao da segunda thread
 //Matrizes: Matriz[Altura][Largura]
-unsigned char N[1080][5760]; //Matriz da imagem atual (sendo processada)
-unsigned char T[1080][1920]; //Matriz da imagem anterior (Ja processada)
-unsigned char N2[1080][5760]; //Matriz da imagem atual (sendo processada)
-unsigned char T2[1080][1920]; //Matriz da imagem anterior (Ja processada)
+unsigned char N[1080][5760]; //Matriz da imagem com todos os pixels true color
+unsigned char T[1080][1920]; //Matriz da imagem processada em Floyd
+unsigned char N2[1080][5760]; //Matriz da imagem com todos os pixels true color
+unsigned char T2[1080][1920]; //Matriz da imagem processada em Floyd
 unsigned char P[255][3]; //Paleta de cores para acesso direto (sem calculos)
 char **largs; //argv global
 
@@ -255,7 +255,7 @@ DWORD WINAPI ThreadFunc(){
   int k, h, i;
   for (k = 3; k < QArg; k+=2){
     IN2 = fopen(largs[k],"rb"); //Leitura Binaria
-    printf("T2. Leitura de %s\n", largs[k]);
+    //printf("T2. Leitura de %s\n", largs[k]);
     if (IN2 == NULL){
       return 2;
     }
@@ -318,7 +318,7 @@ int main(int argc, char *argv[]){
   fseek(IN1, 18, SEEK_SET);
   fread(&Larg, 4, 1, IN1);
   fread(&Altu, 4, 1, IN1);
-  if ((Larg & 4095) != Larg || (Altu & 4095) != Altu){
+  if (Larg > 1920 || Altu > 1080){
     return 6;
   }
 
@@ -358,7 +358,7 @@ int main(int argc, char *argv[]){
 
   for (k = 4; k < argc; k+=2){
     IN1 = fopen(argv[k],"rb"); //Leitura Binaria
-    printf("T1. Leitura de %s\n", argv[k]);
+    //printf("T1. Leitura de %s\n", argv[k]);
     if (IN1 == NULL){
       return 2;
     }

@@ -4,5 +4,5 @@
 3   Arquivo de saida nao pode ser aberto
 4   Arquivo sem assinatura de bitmap
 5   Imagem com paleta
-6   Imagem com dimensoes maiores que 4095 nao sao suportadas por esta versao
+6   Imagem com dimensoes maiores que 1920x1080 nao sao suportadas
 7

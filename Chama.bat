@@ -1,4 +1,4 @@
-gcc Codif.c -o Codif.exe
+gcc CodifST.c -o Codif.exe
 if %ERRORLEVEL% == 0 ( GOTO EXEC )
 GOTO OUT
 :EXEC
