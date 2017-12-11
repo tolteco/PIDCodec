@@ -256,7 +256,7 @@ int main(int argc, char *argv[]){
     fwrite(&V[i], sizeof(unsigned short), X, OUT);*/
     for (i = 0; i < Altu; i++) {
       //T[i][j] = N[i][j];
-      fwrite(&T[i], 1, Larg, OUT0);
+      fwrite(&T[i], 1, Larg, OUT);
     }
     fflush(OUT);
     fclose(IN);
