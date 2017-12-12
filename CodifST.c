@@ -22,6 +22,7 @@ unsigned char T[1080][1920]; //Matriz da imagem anterior (Ja processada)
 unsigned char P[255][3]; //Paleta de cores para acesso direto (sem calculos)
 unsigned int O[255];
 double Prob[255][2];
+double ProbAcum[255];
 unsigned int V[2073600];
 
 //Efetua quantizacao por Floyd–Steinberg (Paleta uniforme)
@@ -142,35 +143,6 @@ void gerapaleta(){
   }
 }
 
-//Calcula a diferenca entra a imagem nova(T) e a anterior(O) e
-/*void diferenca(){
-  int i, j, Aux, h;
-  h = 0;
-  for (i = 0; i < Altu; i++){
-    for (j = 0; j < Larg; j++){ //Algum desses ifs deve poder cair !!!!! OLHAR
-      if (O[i][j] == T[i][j]){
-        T[i][j] = 252; //252 codigo para "cor nao muda" ja que a paleta so vai ate 251
-      } else {
-        O[i][j] = T[i][j];
-      }
-      if(i == 0 && j == 0){ //Me doi mas nao deu de outro jeito
-        V[0] = T[0][0];
-      }
-      if ((V[h] & 255) == T[i][j]){
-        if ((V[h] & 65280) == 65280){ //Limite
-          h++;
-          V[h] = T[i][j] + 256;
-        }
-        V[h] += 256; //Acrescenta um a contagem de igualdade
-      } else {
-        h++;
-        V[h] = T[i][j] + 256;
-      }
-    }
-  }
-  X = h;
-}*/
-
 void aritmetica(){
   int i, j, S, Ant, h;
   unsigned int LSup, LInf;
@@ -193,12 +165,15 @@ void aritmetica(){
   }
   for (i = 0; i < 255; i++) {
     Prob[i][0] = (double) O[i] / S;
+    //printf("O[%i] = %u\n", i, O[i]);
   }
   Prob[0][1] = Prob[0][0];
   Prob[0][0] = 0.0;
+  ProbAcum[0] = 0.0;
   for (i = 1; i < 255; i++) {
-    Prob[i][1] = Prob[i-1][1] + Prob[i][0];
-    Prob[i][0] = Prob[i-1][1];
+    Prob[i][1] = Prob[i-1][1] + Prob[i][0]; //Mais
+    Prob[i][0] = Prob[i-1][1]; //Menos
+    ProbAcum[i] = (Prob[i][1] * 4294967295) + ProbAcum[i-1];
   }
   /*for (i = 0; i < 255; i++) {
     printf("..Prob[%i] = %lf\n", i, Prob[i][1]);
@@ -211,13 +186,13 @@ void aritmetica(){
   h = 0;
   for (i = 0; i < Altu; i++){
     for (j = 0; j < Larg; j++){ //Hora da magica
-      LInf += ((LSup - LInf) * Prob[T[i][j]][1]);
-      LSup += ((LSup - LInf) * Prob[T[i][j]][0]);
+      LInf += floor(((LSup - LInf) * Prob[T[i][j]][1]));
+      LSup += floor(((LSup - LInf) * Prob[T[i][j]][0]));
       if (j % 5 == 0 && i != 0 && j != 0){ //6-1
         V[h] = LInf;
         h++;
-        LSup = 4294967295;
-        LInf = 0;
+        LSup = 4294967295.0;
+        LInf = 0.0;
       }
     }
   }
@@ -228,6 +203,22 @@ void invaritmetica(){
   int i, j, S, Ant, h;
   unsigned int LSup, LInf;
   double S2 = 0;
+  for (i = 0; i < X; i++) {
+    for (Ant = 0; Ant < 6; Ant++) {
+      h = 0;
+      while (V[i] > (ProbAcum[h])){ //Procura elemento na tabela
+        h++; //Geralmente nao vai dar zero
+      }
+      T[j][S] = h;
+      if (S == (Larg-1)){
+        S = -1;
+        j += 1;
+      }
+      S++;
+      V[i] = floor((V[i]-ProbAcum[h-1]) * (Prob[h][1] - Prob[h][0]));
+      printf("Aproximada cor %i a partir de %u\n", h, V[i]);
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////// MAIN
@@ -278,13 +269,14 @@ int main(int argc, char *argv[]){
   //Quantizacao da primeira imagem
   quantiza();
   aritmetica();
+  invaritmetica();
   for (i = 0; i < Altu; i++) {
     fwrite(&T[i], 1, Larg, OUT);
   }
   fflush(OUT);
   fclose(IN);
 
-  for (k = 3; k < argc; k++){
+  /*for (k = 3; k < argc; k++){
     IN = fopen(argv[k],"rb"); //Leitura Binaria
     printf("Leitura de %s\n", argv[k]);
     if (IN == NULL){
@@ -310,7 +302,7 @@ int main(int argc, char *argv[]){
     }
     fflush(OUT);
     fclose(IN);
-  } //Fim para cada arquivo
+  } //Fim para cada arquivo*/
   fclose(OUT);
   return ES;
 }
